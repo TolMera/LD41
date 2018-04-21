@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Adventures in the Rose garden</title>
+		
+		<link rel="manifest" href="manifest.json">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+		
+		<!-- Would like to put in a fallback for those situations where CDN fails (network??) -->
+		<!-- CDN -->
+		<!-- JQUERY -->
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+		<!-- JQUERY UI -->
+		<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+		
+		<!-- BOOTSTRAP -->
+		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.bundle.min.js" integrity="sha384-feJI7QwhOS+hwpX2zkaeJQjeiwlhOP+SdQDqhgvvo1DsjtiSQByFdThsxO669S2D" crossorigin="anonymous"></script>
+
+		<!-- LIBS -->
+		<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jcanvas/21.0.0/min/jcanvas.min.js" integrity="sha256-dWVTDW52FVJ+rL3Q3pr22qgSThQ5hPTY3K1PynK1z48=" crossorigin="anonymous"></script> -->
+		
+		<!-- SWEET ALERT 2 -->
+		<script src="/assets/js/swal.js"></script>
+		<script src="/assets/js/jsCookies.js"></script>
+
+		<!-- CSS -->
+		<style>
+			body {
+				height: 100vh;
+				width:	100vw;
+				overflow: hidden;
+				background-color: rgb(149, 56, 202);
+			}
+			
+			.card {
+				height: 93%;
+				display: inline-block;
+				margin: 3% 3%;
+			}
+			
+			.activeCard {
+				position: absolute;
+				top: 0px;
+				right: 0px;
+				height: 3cm;
+			}
+			
+			#hand {
+				height: 5cm;
+				width: 100vw;
+				background-color: goldenrod;
+				
+				position: absolute;
+				bottom: 1cm;
+				
+				white-space: nowrap;
+				
+				overflow-x: scroll;
+				overflow-y: hidden;
+				padding: 0px 3cm;
+			}
+			
+			#menuIcon {
+				z-index: 10;
+			}
+			
+			* {
+				/* Prevent the blue select happening on phones */
+				user-select: none;
+			}
+		</style>
+		
+		<!-- Scripting -->
+		<script>
+			
+		</script>
+	</head>
+
+	<body id="body">
+		
+		<script>
+			// Initialisers
+			window.cardLastTap = 0;
+			window.activeCardLastTap = 0;
+			
+			// Data storage definitions
+			class gameModel {
+				constructor() {
+					this.hand = [];
+				}
+				
+				/**
+				 * If we need to create a new card in hand, this is how.
+				 */
+				newCard(cardName) {
+					this.hand.push(cardName);
+					$('body').trigger('newCard', cardName);
+				}
+				
+				delCard(index) {
+					this.hand.splice(index, 1);
+					$('body').trigger('delCard', cardName);
+				}
+			};
+			
+			// Controller logic
+			class gameController extends gameModel {
+				/**
+				 *	Initialisations function - loads the game if this is a saved game.
+				 */
+				constructor() {
+					super();
+					if (getCookie('savedGame') != false) {
+						// There is a saved game, show load window
+						swal({
+							title: 'Load Saved Game',
+							text:	'Would you like to load your last game or start a new game?',
+							confirmButtonText: 'Load',
+							cancelButtonText: 'New',
+							showConfirmButton: true,
+							showCancelButton: true
+						}).then(function(button) {
+							if (button.value == true) {
+								// Load game
+							} else if (button.dismiss == "cancel") {
+								// New Game
+							}
+						});
+					};
+					
+					// // Events to listen for
+					$('body').on('newCard', function(cardName) {
+						// If we need to do anything with the new card in the controller (trigger a new card animation?)
+					});
+					
+					$('body').on('delCard', function(cardName) {
+						// If we need to do anything when a card is removed
+					});
+				}
+			};
+			
+			// View Logic
+			class gameView extends gameController {
+				constructor() {
+					super();
+					
+					this.assets = "/assets/";
+					this.icons = "/icons/";
+					this.cards = "/cards/";
+					this.menuIcon = 'menu.png';
+					$('body').on('showMenu', this.showMenu());
+					
+					// $('body').on('click', '.card', this.useCard);
+					
+					$('body').on('touchstart mousedown', '.card', function(event){
+						window.cardTouchStart = new Date().getTime();
+					});
+					$('body').on('touchend mouseup', '.card', (event) => {
+						window.cardTouchEnd = new Date().getTime();
+						let td = window.cardTouchEnd - window.cardTouchStart;
+						if (td > 1000) {
+							// This was a tap&hold
+						} else {
+							// This was a tap
+							let tt = window.cardTouchEnd - window.cardLastTap;
+							if (tt < 300 && tt > 75) {
+								// console.log("double tap");
+								this.useCard.call(this, event.target);
+							}
+						}
+						window.cardLastTap = window.cardTouchEnd;
+					});
+					
+					$('body').on('touchstart mousedown', '.activeCard', function(event){
+						window.activeCardTouchStart = new Date().getTime();
+					});
+					$('body').on('touchend mouseup', '.activeCard', (event) => {
+						window.activeCardTouchEnd = new Date().getTime();
+						let td = window.activeCardTouchEnd - window.activeCardTouchStart;
+						if (td > 1000) {
+							// This was a tap&hold
+						} else {
+							// This was a tap
+							let tt = window.activeCardTouchEnd - window.activeCardLastTap;
+							if (tt < 300 && tt > 75) {
+								// console.log("double tap");
+								this.returnCard.call(this, event.target);
+							}
+						}
+						window.activeCardLastTap = window.activeCardTouchEnd;
+					});
+				}
+				
+				useCard(card) {
+					if ($('.activeCard').length > 0) {
+						this.returnCard($('.activeCard'));
+					}
+					$(card).hide({
+						duration: 500,
+						done: function() {
+							$(card).detach();
+							
+							$(card).removeClass('card').addClass("activeCard");
+							$('body').append(card);
+							$(card).show(500);
+						}
+					});
+				}
+				
+				returnCard(card) {
+					$(card).hide({
+						duration: 500,
+						done: function() {
+							$(card).detach();
+							
+							$(card).removeClass('activeCard').addClass("card");
+							$('#hand').append(card);
+							$(card).show(500);
+						}
+					});
+				}
+				
+				isMenuButton(button) {
+					$(button).on('click', () => {
+						console.log("F:isMenuButton");
+						// This is the menu button, it should pull up the list of card that you have in your hand.
+						if (this.handShowing()) {
+							$('#hand').fadeOut({
+								duration: 500,
+								done: function() {
+									this.remove();
+								}
+							});
+							$('body').trigger('handRemoved');
+						} else {
+							let cards = '';
+							for (let item of this.hand) {
+								console.log(item, this.hand);
+								cards += this.cardIcon(item);
+							}
+							let hand = `<div id="hand">
+								${cards}
+							</div>`;
+							$('body').append($(hand).hide().fadeIn(750));
+							$('body').trigger('handShown');
+						}
+					});
+				}
+				
+				showMenu() {
+					let icon = $.parseHTML(`<img id="menuIcon" src="${this.assets}${this.icons}${this.menuIcon}" />`)[0];
+					$('body').append(icon);
+					this.iconSize(icon);
+					this.iconPosition(icon, 'm', 'b')
+					this.isMenuButton(icon);
+				}
+				
+				/**
+				 * Looks at the view, and returns true/false if the card scroller is showing
+				 */
+				handShowing() {
+					if ($('#hand:visible').length > 0) {
+						return true;
+					}
+					return false;
+				}
+				
+				cardIcon(cardName) {
+					return `<img class="card" src="${this.assets}${this.cards}${cardName}.png" />`;
+				}
+				
+				iconSize(icon) {
+					// Can test the button and if it's an important button make it bigger, if it's not important, make it smaller.
+					$(icon).css({
+						width: 2 + 'cm',
+						height: 2 + 'cm'
+					});
+				}
+				
+				iconPosition(icon, h, v) {
+					$(icon).css({
+						position: 'absolute'
+					});
+					switch (h) {
+						case 'l':
+							$(icon).css({
+								left: '0%'
+							});
+						break;
+						case 'm':
+							let subtract = (($(icon).width() / window.innerWidth) * 100) / 2;
+							$(icon).css({
+								left: (50 - subtract) + '%',
+								// right: '50%'
+							});
+						break;
+						case 'r':
+							$(icon).css({
+								right: '0%'
+							});
+						break;
+					}
+					switch (v) {
+						case 't':
+							$(icon).css({
+								top: '0%'
+							});
+						break;
+						case 'm':
+							let subtract = (($(icon).height() / window.innerHeight) * 100) / 2;
+							$(icon).css({
+								top: (50 - subtract) + '%',
+								// bottom: '50%'
+							});
+						break;
+						case 'b':
+							$(icon).css({
+								bottom: '0%'
+							});
+						break;
+					}
+					
+					/*
+						want to bind to this so that if orientation or screen size etc change, then this would be re-updated...
+					*/
+				}
+			};
+			
+			// Compound object - Shoudl include 'services'
+			class game extends gameView {
+				constructor() {
+					super();
+					
+					$('body').trigger('showMenu');
+				}
+			};
+			
+			$('body').on('init', function() {
+				window.game = new game();
+				window.game.newCard("card");
+				window.game.newCard("card");
+				window.game.newCard("card");
+				window.game.newCard("card");
+				window.game.newCard("card");
+				window.game.newCard("card");
+
+			});
+			
+			$(() => {
+				// When the window is ready and loaded, get the size information
+				// Send the info back to the server so we can tune to the user specs.
+				// If we can ID the user device, estimate the right size for the 'menu' button, and place it in easy reach for user (middle bottom?)
+				
+				$('body').on('screenChange, fullscreenchange, orientationchange', () => {
+					$.ajax({
+						url:	'/capture/screensize',
+						data:	{
+							window: {
+								innerWidth: window.innerWidth,
+								innerHeight: window.innerHeight,
+								width: window.width,
+								height: window.height,
+								navigator: window.navigator
+							},
+							document: {
+								fullscreenEnabled: document.fullscreenEnabled,
+								fullscreenElement: document.fullscreenElement
+							}
+						}
+					});
+				});
+				
+				// Always ask to go into full screen mode
+				if (typeof(document.getElementById("body").requestFullscreen) == "function") {
+					document.getElementById("body").requestFullscreen();
+				}
+				
+				$('body').trigger('init');
+			});
+		</script>
+	</body>
+</html>

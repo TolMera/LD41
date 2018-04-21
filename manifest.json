@@ -1,0 +1,16 @@
+{
+  "name": "Adventures in the Rose garden",
+  "short_name": "Rose Garden",
+  "start_url": "/index.html",
+  "display": "fullscreen",
+  ​​"orientation": "landscape",
+  "background_color": "#663854",
+  "description": "A Point and Click Card Game",
+  "icons": [
+    {
+      "src": "assets/images/appIcon.png",
+      "sizes": "48x48",
+      "type": "image/png"
+    }
+  ]
+}
