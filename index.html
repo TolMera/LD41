@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html>
+
 	<head>
 		<meta charset="UTF-8">
 		<title>Adventures in the Rose garden</title>
-		
+
 		<link rel="manifest" href="manifest.json">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
-		
+
 		<!-- Would like to put in a fallback for those situations where CDN fails (network??) -->
 		<!-- CDN -->
 		<!-- JQUERY -->
@@ -15,85 +16,140 @@
 		<!-- JQUERY UI -->
 		<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
 		<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
-		
+
 		<!-- BOOTSTRAP -->
-		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
-		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.bundle.min.js" integrity="sha384-feJI7QwhOS+hwpX2zkaeJQjeiwlhOP+SdQDqhgvvo1DsjtiSQByFdThsxO669S2D" crossorigin="anonymous"></script>
+		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+		 crossorigin="anonymous">
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+		 crossorigin="anonymous"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.bundle.min.js" integrity="sha384-feJI7QwhOS+hwpX2zkaeJQjeiwlhOP+SdQDqhgvvo1DsjtiSQByFdThsxO669S2D"
+		 crossorigin="anonymous"></script>
 
 		<!-- LIBS -->
 		<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jcanvas/21.0.0/min/jcanvas.min.js" integrity="sha256-dWVTDW52FVJ+rL3Q3pr22qgSThQ5hPTY3K1PynK1z48=" crossorigin="anonymous"></script> -->
-		
+
+		<!-- Gyro POLYFILL -->
+		<script src="/assets/js/polyfill/gyronorm.complete.min.js"></script>
+
+
 		<!-- SWEET ALERT 2 -->
 		<script src="/assets/js/swal.js"></script>
 		<script src="/assets/js/jsCookies.js"></script>
 
 		<!-- CSS -->
 		<style>
+			.noPaddingOrMargin {
+				padding: 0px;
+				margin: 0px;
+			}
+
+			.unitMargin {
+				margin: 1mm;
+			}
+
+			#background {
+				width: 120vw;
+				height: 120vh;
+				position: absolute;
+				z-index: -100;
+
+				background-position: left top;
+				background-repeat: no-repeat;
+				background-size: cover;
+				
+				transition: all 0.3s;
+			}
+
 			body {
 				height: 100vh;
-				width:	100vw;
+				width: 100vw;
 				overflow: hidden;
 				background-color: rgb(149, 56, 202);
 			}
-			
+
 			.card {
 				height: 93%;
 				display: inline-block;
 				margin: 3% 3%;
 			}
-			
+
 			.activeCard {
 				position: absolute;
 				top: 0px;
 				right: 0px;
 				height: 3cm;
 			}
-			
+
 			#hand {
 				height: 5cm;
 				width: 100vw;
 				background-color: goldenrod;
-				
+
 				position: absolute;
 				bottom: 1cm;
-				
+
 				white-space: nowrap;
-				
+
 				overflow-x: scroll;
 				overflow-y: hidden;
 				padding: 0px 3cm;
 			}
-			
+
+			#textbox {
+				height: 3cm;
+				width: 100vw;
+				/* background-color: silver; */
+				color: white;
+
+				position: absolute;
+				bottom: 2cm;
+
+				/* white-space: nowrap; */
+				overflow-x: hidden;
+				overflow-y: scroll;
+			}
+
+			#textbox p {
+				z-index: -10;
+			}
+
 			#menuIcon {
 				z-index: 10;
 			}
-			
+
 			* {
 				/* Prevent the blue select happening on phones */
 				user-select: none;
 			}
 		</style>
-		
+
 		<!-- Scripting -->
 		<script>
-			
+			Number.prototype.clamp = function(min, max) {
+				return Math.min(Math.max(this, min), max);
+			};
 		</script>
 	</head>
 
 	<body id="body">
-		
+
 		<script>
 			// Initialisers
 			window.cardLastTap = 0;
 			window.activeCardLastTap = 0;
-			
+			window.lastFrame = Date.now();
+			window.gyro = {
+				alpha: 0,
+				beta: 0,
+				frame: 0
+			};
+
 			// Data storage definitions
 			class gameModel {
 				constructor() {
 					this.hand = [];
 				}
-				
+
 				/**
 				 * If we need to create a new card in hand, this is how.
 				 */
@@ -101,13 +157,13 @@
 					this.hand.push(cardName);
 					$('body').trigger('newCard', cardName);
 				}
-				
+
 				delCard(index) {
 					this.hand.splice(index, 1);
 					$('body').trigger('delCard', cardName);
 				}
 			};
-			
+
 			// Controller logic
 			class gameController extends gameModel {
 				/**
@@ -119,12 +175,12 @@
 						// There is a saved game, show load window
 						swal({
 							title: 'Load Saved Game',
-							text:	'Would you like to load your last game or start a new game?',
+							text: 'Would you like to load your last game or start a new game?',
 							confirmButtonText: 'Load',
 							cancelButtonText: 'New',
 							showConfirmButton: true,
 							showCancelButton: true
-						}).then(function(button) {
+						}).then(function (button) {
 							if (button.value == true) {
 								// Load game
 							} else if (button.dismiss == "cancel") {
@@ -132,32 +188,38 @@
 							}
 						});
 					};
-					
+
 					// // Events to listen for
-					$('body').on('newCard', function(cardName) {
+					$('body').on('newCard', function (cardName) {
 						// If we need to do anything with the new card in the controller (trigger a new card animation?)
 					});
-					
-					$('body').on('delCard', function(cardName) {
+
+					$('body').on('delCard', function (cardName) {
 						// If we need to do anything when a card is removed
 					});
 				}
 			};
-			
+
 			// View Logic
 			class gameView extends gameController {
 				constructor() {
 					super();
-					
+
 					this.assets = "/assets/";
 					this.icons = "/icons/";
 					this.cards = "/cards/";
+					this.background = "/background/";
 					this.menuIcon = 'menu.png';
+
+					$('body').on('showBackground', (event, background) => { this.showBackground.call(this, event, background) });
 					$('body').on('showMenu', this.showMenu());
-					
+					$('body').on('showTextbox', this.showTextbox());
+
+					$('body').on('enableGyroBackground', this.enableGyroBackground(event));
+
 					// $('body').on('click', '.card', this.useCard);
-					
-					$('body').on('touchstart mousedown', '.card', function(event){
+
+					$('body').on('touchstart mousedown', '.card', function (event) {
 						window.cardTouchStart = new Date().getTime();
 					});
 					$('body').on('touchend mouseup', '.card', (event) => {
@@ -175,8 +237,8 @@
 						}
 						window.cardLastTap = window.cardTouchEnd;
 					});
-					
-					$('body').on('touchstart mousedown', '.activeCard', function(event){
+
+					$('body').on('touchstart mousedown', '.activeCard', function (event) {
 						window.activeCardTouchStart = new Date().getTime();
 					});
 					$('body').on('touchend mouseup', '.activeCard', (event) => {
@@ -194,64 +256,215 @@
 						}
 						window.activeCardLastTap = window.activeCardTouchEnd;
 					});
+
+					// $('body').on('click', (event) => {
+					// 	console.log(event.target.id);
+					// 	if (event.target.id == 'hand') {
+					// 		// Bring the hand to the front.
+					// 		let t = event.target;
+					// 		let o = $('#textbox')[0];
+					// 		if (t != undefined && o != undefined) {
+					// 			$(t).detach();
+					// 			$(o).after(t);
+					// 		}
+					// 	} else if (event.target.id == 'textbox') {
+					// 		// Bring the textbox to the front
+					// 		let t = event.target;
+					// 		let o = $('#hand')[0];
+					// 		if (t != undefined && o != undefined) {
+					// 			$(t).detach();
+					// 			$(o).after(t);
+					// 		}
+					// 	}
+					// });
+
+					$('body').on('textbox', (event, data) => {
+						let tb = $('#textbox');
+						$(tb).prepend('<p class="noPaddingOrMargin">' + data + '</p>');
+						let tbh = $(tb).height();
+						let contentH = 0;
+						if ($('#textbox p').length > 1) {
+							$('#textbox p').each(function () {
+								contentH += $(this).height();
+							});
+							while (contentH > tbh) {
+								$('#textbox p').last().remove();
+
+								if ($('#textbox p').length > 1) {
+									contentH = 0;
+									$('#textbox p').each(function () {
+										contentH += $(this).height();
+									});
+								} else {
+									return false;
+									console.log("text overflow");
+								}
+							}
+						}
+
+						$('#textbox').click();
+
+						return true;
+					});
 				}
-				
+
 				useCard(card) {
 					if ($('.activeCard').length > 0) {
 						this.returnCard($('.activeCard'));
 					}
 					$(card).hide({
 						duration: 500,
-						done: function() {
+						done: function () {
 							$(card).detach();
-							
+
 							$(card).removeClass('card').addClass("activeCard");
 							$('body').append(card);
-							$(card).show(500);
+							$(card).fadeIn(500);
 						}
 					});
 				}
-				
+
 				returnCard(card) {
-					$(card).hide({
+					$(card).fadeOut({
 						duration: 500,
-						done: function() {
+						done: function () {
 							$(card).detach();
-							
+
 							$(card).removeClass('activeCard').addClass("card");
 							$('#hand').append(card);
 							$(card).show(500);
 						}
 					});
 				}
-				
+
 				isMenuButton(button) {
 					$(button).on('click', () => {
-						console.log("F:isMenuButton");
 						// This is the menu button, it should pull up the list of card that you have in your hand.
 						if (this.handShowing()) {
 							$('#hand').fadeOut({
 								duration: 500,
-								done: function() {
-									this.remove();
+								done: function () {
+									$('#hand').remove();
 								}
 							});
 							$('body').trigger('handRemoved');
 						} else {
+							$('.activeCard').fadeOut({
+								duration: 500,
+								done: function (item) {
+								}
+							});
 							let cards = '';
 							for (let item of this.hand) {
-								console.log(item, this.hand);
 								cards += this.cardIcon(item);
 							}
 							let hand = `<div id="hand">
 								${cards}
 							</div>`;
-							$('body').append($(hand).hide().fadeIn(750));
+							hand = $.parseHTML(hand);
+							$(hand).hide()
+							$('body').append(hand);
+							$(hand).fadeIn(750);
 							$('body').trigger('handShown');
 						}
 					});
 				}
+
+				showBackground(event, background) {
+					$('body').append('<div id="background"></div>');
+					$('#background').css({
+						'background-image': `url(${this.assets}${this.background}${background})`
+					});
+				}
+
+				enableGyroBackground() {
+					// Javascript gyro API - read twist and apply that to background image.
+					window.gn = new GyroNorm();
+					window.gn.init().then(() => {
+						window.gn.start((data) => {
+							// Process:
+							// data.do.alpha	( deviceorientation event alpha value )
+							// data.do.beta		( deviceorientation event beta value )
+							// data.do.gamma	( deviceorientation event gamma value )
+							// data.do.absolute	( deviceorientation event absolute value )
+
+							// data.dm.x		( devicemotion event acceleration x value )
+							// data.dm.y		( devicemotion event acceleration y value )
+							// data.dm.z		( devicemotion event acceleration z value )
+
+							// data.dm.gx		( devicemotion event accelerationIncludingGravity x value )
+							// data.dm.gy		( devicemotion event accelerationIncludingGravity y value )
+							// data.dm.gz		( devicemotion event accelerationIncludingGravity z value )
+
+							// data.dm.alpha	( devicemotion event rotationRate alpha value )
+							// console.log(data.dm.alpha);
+							// Alpha is vertical rotation.
+							// $('body').trigger('textbox', data.dm.alpha);
+							// + = Twist Up
+							// - = Twist Down
+
+							// data.dm.beta		( devicemotion event rotationRate beta value )
+							// console.log(data.dm.beta);
+							// Beta is horizontal rotation
+							// $('body').trigger('textbox', data.dm.beta);
+							// + = Twist Left
+							// - = Twist Right
+
+							// data.dm.gamma	( devicemotion event rotationRate gamma value )
+							// gama will be torque
+							// console.log(data.dm.gamma);
+
+							window.gyro.alpha += data.dm.alpha;
+							window.gyro.beta += data.dm.beta;
+							window.gyro.frame += 1;
+
+													//   vv DEBUGGING
+							if (window.lastFrame + (25 * 1) <= Date.now()) {
+													//   ^^ DEBUGGING
+								// It is time for a frame
+								let alpha = Math.floor(data.dm.alpha / window.gyro.frame);
+								let beta = Math.floor(data.dm.beta / window.gyro.frame);
+
+								window.lastFrame = Date.now();
+								window.gyro.alpha = 0;
+								window.gyro.beta = 0;
+								window.gyro.frame = 0;
+								
+								this.gyroBackground(alpha, beta);
+							}
+
+						});
+					}).catch(function (e) {
+						// Catch if the DeviceOrientation or DeviceMotion is not supported by the browser or device
+						$.ajax({
+							url: '/',
+							data: json_encode(e)
+						});
+					});
+				}
 				
+				gyroBackground(vert, hori) {
+					
+					let bg = $('#background');
+					let top = new Number($(bg).css('top').replace('px', ''));
+					// vert = vert.clamp(-12, 12);
+					top += vert;
+					
+					let left = new Number($(bg).css('left').replace('px', ''));
+					// hori = hori.clamp(-12, 12);
+					left += hori;
+					
+// $('body').trigger('textbox', `vert: ${top}, hori: ${left}`);
+					
+					top = top.clamp(0-($(bg).height() - window.innerHeight), 0);
+					left = left.clamp(0-($(bg).width() - window.innerWidth), 0);
+					
+					$(bg).css({
+						top: top,
+						left: left
+					});
+				}
+
 				showMenu() {
 					let icon = $.parseHTML(`<img id="menuIcon" src="${this.assets}${this.icons}${this.menuIcon}" />`)[0];
 					$('body').append(icon);
@@ -259,7 +472,12 @@
 					this.iconPosition(icon, 'm', 'b')
 					this.isMenuButton(icon);
 				}
-				
+
+				showTextbox() {
+					let textbox = $.parseHTML(`<div id="textbox" class="text-center"></div>`)[0];
+					$('body').append(textbox);
+				}
+
 				/**
 				 * Looks at the view, and returns true/false if the card scroller is showing
 				 */
@@ -269,11 +487,11 @@
 					}
 					return false;
 				}
-				
+
 				cardIcon(cardName) {
 					return `<img class="card" src="${this.assets}${this.cards}${cardName}.png" />`;
 				}
-				
+
 				iconSize(icon) {
 					// Can test the button and if it's an important button make it bigger, if it's not important, make it smaller.
 					$(icon).css({
@@ -281,7 +499,7 @@
 						height: 2 + 'cm'
 					});
 				}
-				
+
 				iconPosition(icon, h, v) {
 					$(icon).css({
 						position: 'absolute'
@@ -291,56 +509,95 @@
 							$(icon).css({
 								left: '0%'
 							});
-						break;
+							break;
 						case 'm':
 							let subtract = (($(icon).width() / window.innerWidth) * 100) / 2;
 							$(icon).css({
 								left: (50 - subtract) + '%',
 								// right: '50%'
 							});
-						break;
+							break;
 						case 'r':
 							$(icon).css({
 								right: '0%'
 							});
-						break;
+							break;
 					}
 					switch (v) {
 						case 't':
 							$(icon).css({
 								top: '0%'
 							});
-						break;
+							break;
 						case 'm':
 							let subtract = (($(icon).height() / window.innerHeight) * 100) / 2;
 							$(icon).css({
 								top: (50 - subtract) + '%',
 								// bottom: '50%'
 							});
-						break;
+							break;
 						case 'b':
 							$(icon).css({
 								bottom: '0%'
 							});
-						break;
+							break;
 					}
-					
+
 					/*
 						want to bind to this so that if orientation or screen size etc change, then this would be re-updated...
 					*/
 				}
 			};
-			
+
 			// Compound object - Shoudl include 'services'
 			class game extends gameView {
 				constructor() {
 					super();
-					
+
+					$('body').trigger('showBackground', ['menu.png']);
 					$('body').trigger('showMenu');
+					$('body').trigger('showTextbox');
+
+					$('body').trigger('enableGyroBackground');
+
+					this.menu = {};
+					this.menu.background = "menu.png";
+
+
+					this.menu.show = function () {
+						swal({
+							title: 'Menu',
+							html: `<div id="menu">
+								Welcome to the Rose Guarden<br />
+								<button class="btn btn-info col unitMargin">New Game</button><br />
+								<button class="btn btn-info col unitMargin">Load Game</button><br />
+								<button class="btn btn-info col unitMargin">Settings</button><br />
+								<button class="btn btn-info col unitMargin">Credits</button>
+							</div>`,
+							showConfirmButton: false
+						});
+					};
+
+					$('body').on('click', '#menu > button', (event) => {
+						this.menu[$(event.target).text().replace(' ', '')]();
+					});
+
+					this.menu.NewGame = function (event) {
+						console.log("New Game", event);
+					}
+					this.menu.LoadGame = function (event) {
+						console.log("Load Game", event);
+					}
+					this.menu.Settings = function (event) {
+						console.log("Settings", event);
+					}
+					this.menu.Credits = function (event) {
+						console.log("Credits", event);
+					}
 				}
 			};
-			
-			$('body').on('init', function() {
+
+			$('body').on('init', function () {
 				window.game = new game();
 				window.game.newCard("card");
 				window.game.newCard("card");
@@ -350,16 +607,16 @@
 				window.game.newCard("card");
 
 			});
-			
+
 			$(() => {
 				// When the window is ready and loaded, get the size information
 				// Send the info back to the server so we can tune to the user specs.
 				// If we can ID the user device, estimate the right size for the 'menu' button, and place it in easy reach for user (middle bottom?)
-				
+
 				$('body').on('screenChange, fullscreenchange, orientationchange', () => {
 					$.ajax({
-						url:	'/capture/screensize',
-						data:	{
+						url: '/capture/screensize',
+						data: {
 							window: {
 								innerWidth: window.innerWidth,
 								innerHeight: window.innerHeight,
@@ -374,14 +631,15 @@
 						}
 					});
 				});
-				
+
 				// Always ask to go into full screen mode
-				if (typeof(document.getElementById("body").requestFullscreen) == "function") {
+				if (typeof (document.getElementById("body").requestFullscreen) == "function") {
 					document.getElementById("body").requestFullscreen();
 				}
-				
+
 				$('body').trigger('init');
 			});
 		</script>
 	</body>
+
 </html>
