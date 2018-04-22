@@ -1,0 +1,90 @@
+.noPaddingOrMargin {
+	padding: 0px;
+	margin: 0px;
+}
+
+.unitMargin {
+	margin: 1mm;
+}
+
+#background {
+	/* width: 120vw; */
+	height: 120vh;
+	position: absolute;
+
+	background-position: left top;
+	background-repeat: no-repeat;
+	background-size: cover;
+	
+	/* Blur the edges of the image so you get UI feedback that you're at the edge */
+
+	transition: all 0.60s;
+}
+#background > img.bg {
+	box-shadow: 0 0 1cm 1cm white inset;
+	height: 100%;
+}
+
+body {
+	/* height: 100vh; */
+	/* width: 100vw; */
+	/* overflow: hidden; */
+	background-color: rgb(149, 56, 202);
+}
+
+.card {
+	height: 93%;
+	display: inline-block;
+	margin: 3% 3%;
+}
+
+.activeCard {
+	position: absolute;
+	top: 0px;
+	right: 0px;
+	height: 3cm;
+}
+
+#hand {
+	height: 5cm;
+	width: 100vw;
+	background-color: goldenrod;
+
+	position: absolute;
+	bottom: 1cm;
+
+	white-space: nowrap;
+
+	overflow-x: scroll;
+	overflow-y: hidden;
+	padding: 0px 3cm;
+}
+
+#textbox {
+	height: 3cm;
+	width: 100vw;
+	
+	background-color: rgba(53, 94, 37, 0.75);
+	
+	color: silver;
+
+	position: absolute;
+	bottom: 2cm;
+
+	/* white-space: nowrap; */
+	overflow-x: hidden;
+	overflow-y: scroll;
+	
+	font-size: 0.8em;
+	
+	padding: 0.5cm;
+}
+
+#menuIcon {
+	z-index: 10;
+}
+
+* {
+	/* Prevent the blue select happening on phones */
+	user-select: none;
+}
